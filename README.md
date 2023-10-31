@@ -5,6 +5,11 @@ You can also specify a subdomain that you'd like to add. Run with -verbose for c
 # Supportability
 The scripts, samples, and tools made available here are provided as-is. These resources are developed in partnership with the community. As such, support is not available. If you find an issue or have questions please reach out through the issues list and I'll do my best to assist, however there is no associated SLA. Use at your own risk.
 
+## NOTES
+    Run with -verbose for console output, otherwise the script runs silently unless it encounters an error and logs to the log file.
+
+    The $logPath attribute will automatically create a new log at the specified path with the date and time appended to the file name. The user running the script will need the appropriate permissions to create a new file at the specified path.
+
 ## REQUIREMENTS
     - Active Directory PowerShell Module
     - You must have the necessary privileges to read and update user attributes in Active Directory.
@@ -29,3 +34,6 @@ The scripts, samples, and tools made available here are provided as-is. These re
 
 ## EXAMPLE
     .\Update-UPNSuffix.ps1 -csvPath "C:\Users.csv" -logPath "C:\" -Subdomain "Subdomain" -AlternateIDAttribute "AlternateIDAttribute" -BackupAttribute "extensionAttribute6" -ExcludedSuffixes "domain.com,contoso.com"
+
+## EXAMPLE
+    .\Update-UPNSuffix.ps1 -csvPath "C:\Users.csv" -logPath "C:\" -AlternateIDAttribute "AlternateIDAttribute" -BackupAttribute "extensionAttribute6"
