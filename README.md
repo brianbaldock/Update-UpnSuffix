@@ -2,6 +2,9 @@
 A script that updates the User Principal Name (UPN) suffix for users in your domain based on their existing UPN prefix and a new domain suffix. 
 You can also specify a subdomain that you'd like to add. Run with -verbose for console output, otherwise the script runs silently unless it encounters an error.
 
+This script contains two "modes" Update and Restore. Update is the default state and will replace the UPN value with the value of the specified "AlternateIDAttribute".
+The Restore mode is an alternative mode that lets you walk back from a previous Update mode execution. It will restore the previous UPN value with the value stored in the "BackupAttribute".
+
 # Supportability
 The scripts, samples, and tools made available here are provided as-is. These resources are developed in partnership with the community. As such, support is not available. If you find an issue or have questions please reach out through the issues list and I'll do my best to assist, however there is no associated SLA. Use at your own risk.
 
@@ -37,3 +40,6 @@ The scripts, samples, and tools made available here are provided as-is. These re
 
 ## EXAMPLE
     .\Update-UPNSuffix.ps1 -csvPath "C:\Users.csv" -logPath "C:\" -AlternateIDAttribute "AlternateIDAttribute" -BackupAttribute "extensionAttribute6"
+
+## Example
+    .\Update-UPNSuffix.ps1 -Restore -csvPath "C:\Users.csv" -logPath "C:\" -RestoreAttribute "extensionAttribute6"
