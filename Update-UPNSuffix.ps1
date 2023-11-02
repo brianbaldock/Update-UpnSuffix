@@ -158,14 +158,32 @@ process{
                 Write-Verbose "Attempting to restore the UPN for $($ADUser.Name) from $($RestoreAttribute): $($ADUser.$RestoreAttribute)."
                 try{
                     Set-ADUser -Identity $ADUser.SamAccountName -UserPrincipalName $ADUser.$RestoreAttribute
-                    Write-Verbose "UPN successfully restored for $($ADUser.Name) restored value: $($ADUser.$RestoreAttribute)"
-                    $Status = "Success"
-                    $Details = "UPN successfully restored for $($ADUser.Name) restored value: $($ADUser.$RestoreAttribute)"
+                    # Re-query the UserPrincipalName attribute to ensure the update was successful
+                    $UpdatedUPN = ((Get-ADUser -Identity $ADUser.SamAccountName -Properties UserPrincipalName).UserPrincipalName) 
+                    if ($UpdatedUPN = ($ADUser.$RestoreAttribute)) {
+                        Write-Verbose "UPN successfully restored from $($RestoreAttribute) for $($ADUser.Name), updated value: $($UpdatedUPN)"
+                        Write-Verbose "Clearing the value of $($RestoreAttribute) for $($ADUser.Name)"
+                        try{
+                            Set-ADUser -Identity $ADUser.SamAccountName -Clear $RestoreAttribute
+                            $Status = "Success"
+                            $Details = "UPN successfully restored from $($RestoreAttribute) for $($ADUser.Name), updated value: $($UpdatedUPN) and cleared $($RestoreAttribute)"
+                        }
+                        catch{
+                            Write-Verbose "Unable to clear $($RestoreAttribute) for $($ADUser.Name) and the restored UPN value may not be valid. Current value: $($UpdatedUPN)"
+                            $Status = "Fail"
+                            $Details = "Unable to clear $($RestoreAttribute) for $($ADUser.Name) and the restored UPN value may not be valid. Current value: $($UpdatedUPN)"
+                        }
+                    }
+                    else{
+                        Write-Verbose "UPN restore failed for $($ADUser.Name), the $($RestoreAttribute) attribute may not be populated with a valid UPN value. Current value: $($ADUser.$RestoreAttribute)"
+                        $Status = "Fail"
+                        $Details = "UPN restore failed for $($ADUser.Name), the $($RestoreAttribute) attribute may not be populated with a valid UPN value. Current value: $($ADUser.$RestoreAttribute)"
+                    }
                 }
                 catch{
-                    Write-Verbose "UPN change failed for $($ADUser.Name), the $($RestoreAttribute) attribute may not be populated with a valid UPN value. Current value: $($ADUser.$RestoreAttribute)"
+                    Write-Verbose "UPN restore failed for $($ADUser.Name), the $($RestoreAttribute) attribute may not be populated with a valid UPN value. Current value: $($ADUser.$RestoreAttribute)"
                     $Status = "Fail"
-                    $Details = "UPN change failed for $($ADUser.Name), the $($RestoreAttribute) attribute may not be populated with a valid UPN value. Current value: $($ADUser.$RestoreAttribute)"
+                    $Details = "UPN restore failed for $($ADUser.Name), the $($RestoreAttribute) attribute may not be populated with a valid UPN value. Current value: $($ADUser.$RestoreAttribute)"
                 }
             }
             # Write to log file
