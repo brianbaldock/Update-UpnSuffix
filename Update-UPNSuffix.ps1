@@ -225,10 +225,29 @@ process{
                     $Details = "Domain suffix $($ADUser.UserPrincipalName.Split("@")[1]) is in the exclusion list, UPN will not be updated."
                 }
                 else{
-                    if (($ADUser.$AlternateIDAttribute.Split("@")[1]) -notin $DomainSuffixes) {
-                        Write-Error "UPN change skipped for $($ADUser.Name). Domain suffix $($ADUser.$AlternateIDAttribute.Split("@")[1]) not in forest UPN suffixes."
-                        $Status = "Skipped"
-                        $Details = "UPN change skipped for $($ADUser.Name). Domain suffix $($ADUser.$AlternateIDAttribute.Split("@")[1]) not in forest UPN suffixes."
+                    if ($Subdomain) {
+                        Write-Verbose "Subdomain specified. New UPN will be $($Subdomain).$($DomainSuffixExtraction). Checking if new UPN exists in Forest suffixes."
+                        $NewDomainSuffix = "$($Subdomain).$($DomainSuffixExtraction)"
+                        if ($NewDomainSuffix -notin $DomainSuffixes) {
+                            Write-Error "UPN change skipped for $($ADUser.Name). New domain suffix with subdomain ($($NewDomainSuffix)) not in forest UPN suffixes."
+                            $Status = "Skipped"
+                            $Details = "UPN change skipped for $($ADUser.Name). New domain suffix with subdomain ($($NewDomainSuffix)) not in forest UPN suffixes."
+                        }
+                        else{
+                            $RegenFullDomain = "$($Subdomain).$($DomainSuffixExtraction)"
+                            $NewUPN = "$($ADUser.$AlternateIDAttribute.Split("@")[0])@$($RegenFullDomain)"
+                            try{
+                                Set-ADUser -Identity $ADUser.SamAccountName -UserPrincipalName $NewUPN -Replace @{$BackupAttribute = $OldUPN}
+                                Write-Verbose "UPN successfully changed for $($ADUser.Name), updated value: $($NewUPN)"
+                                $Status = "Success"
+                                $Details = "UPN successfully updated for $($ADUser.Name), updated value: $($NewUPN)"
+                            }
+                            catch{
+                                Write-Verbose "UPN change failed for $($ADUser.Name)"
+                                $Status = "Fail"
+                                $Details = "UPN change failed for $($ADUser.Name) the UPN value stored in $($AlternateIDAttribute) may not be valid. Current value: $($ADUser.$AlternateIDAttribute)"
+                            }
+                        }
                     }
                     else{
                         if ($ADUser.$BackupAttribute) {
@@ -237,29 +256,10 @@ process{
                             $Details = "$($ADUser.Name) already has value: $($ADUser.$BackupAttribute) for $($BackupAttribute). UPN may have previously been modified. No change applied."
                         }
                         else{
-                            if ($Subdomain) {
-                                Write-Verbose "Subdomain specified. New UPN will be $($Subdomain).$($DomainSuffixExtraction). Checking if new UPN exists in Forest suffixes."
-                                $NewDomainSuffix = "$($Subdomain).$($DomainSuffixExtraction)"
-                                if ($NewDomainSuffix -notin $DomainSuffixes) {
-                                    Write-Error "UPN change skipped for $($ADUser.Name). New domain suffix with subdomain ($($NewDomainSuffix)) not in forest UPN suffixes."
-                                    $Status = "Skipped"
-                                    $Details = "UPN change skipped for $($ADUser.Name). New domain suffix with subdomain ($($NewDomainSuffix)) not in forest UPN suffixes."
-                                }
-                                else{
-                                    $RegenFullDomain = "$($Subdomain).$($DomainSuffixExtraction)"
-                                    $NewUPN = "$($ADUser.$AlternateIDAttribute.Split("@")[0])@$($RegenFullDomain)"
-                                    try{
-                                        Set-ADUser -Identity $ADUser.SamAccountName -UserPrincipalName $NewUPN -Replace @{$BackupAttribute = $OldUPN}
-                                        Write-Verbose "UPN successfully changed for $($ADUser.Name), updated value: $($NewUPN)"
-                                        $Status = "Success"
-                                        $Details = "UPN successfully updated for $($ADUser.Name), updated value: $($NewUPN)"
-                                    }
-                                    catch{
-                                        Write-Verbose "UPN change failed for $($ADUser.Name)"
-                                        $Status = "Fail"
-                                        $Details = "UPN change failed for $($ADUser.Name) the UPN value stored in $($AlternateIDAttribute) may not be valid. Current value: $($ADUser.$AlternateIDAttribute)"
-                                    }
-                                }
+                            if (($ADUser.$AlternateIDAttribute.Split("@")[1]) -notin $DomainSuffixes) {
+                                Write-Error "UPN change skipped for $($ADUser.Name). Domain suffix $($ADUser.$AlternateIDAttribute.Split("@")[1]) not in forest UPN suffixes."
+                                $Status = "Skipped"
+                                $Details = "UPN change skipped for $($ADUser.Name). Domain suffix $($ADUser.$AlternateIDAttribute.Split("@")[1]) not in forest UPN suffixes."
                             }
                             else{
                                 Write-Verbose "Subdomain not specified. New UPN will replicate the $($AlternateIDAttribute) value as defined by parameter."
@@ -281,10 +281,29 @@ process{
                 }
             }
             else{
-                if (($ADUser.$AlternateIDAttribute.Split("@")[1]) -notin $DomainSuffixes) {
-                    Write-Error "UPN change skipped for $($ADUser.Name). $($AlternateIDAttribute) Domain suffix $($ADUser.$AlternateIDAttribute.Split("@")[1]) not in forest UPN suffixes."
-                    $Status = "Skipped"
-                    $Details = "UPN change skipped for $($ADUser.Name). $($AlternateIDAttribute) Domain suffix $($ADUser.$AlternateIDAttribute.Split("@")[1]) not in forest UPN suffixes."
+                if ($Subdomain) {
+                    Write-Verbose "Subdomain specified. New UPN will be $($Subdomain).$($DomainSuffixExtraction). Checking if new UPN exists in Forest suffixes."
+                    $NewDomainSuffix = "$($Subdomain).$($DomainSuffixExtraction)"
+                    if ($NewDomainSuffix -notin $DomainSuffixes) {
+                        Write-Error "UPN change skipped for $($ADUser.Name). New domain suffix with subdomain ($($NewDomainSuffix)) not in forest UPN suffixes."
+                        $Status = "Skipped"
+                        $Details = "UPN change skipped for $($ADUser.Name). New domain suffix with subdomain ($($NewDomainSuffix)) not in forest UPN suffixes."
+                    }
+                    else{
+                        $RegenFullDomain = "$($Subdomain).$($DomainSuffixExtraction)"
+                        $NewUPN = "$($ADUser.$AlternateIDAttribute.Split("@")[0])@$($RegenFullDomain)"
+                        try{
+                            Set-ADUser -Identity $ADUser.SamAccountName -UserPrincipalName $NewUPN -Replace @{$BackupAttribute = $OldUPN}
+                            Write-Verbose "UPN successfully changed for $($ADUser.Name), updated value: $($NewUPN)"
+                            $Status = "Success"
+                            $Details = "UPN successfully updated for $($ADUser.Name), updated value: $($NewUPN)"
+                        }
+                        catch{
+                            Write-Verbose "UPN change failed for $($ADUser.Name)"
+                            $Status = "Fail"
+                            $Details = "UPN change failed for $($ADUser.Name) the UPN value stored in $($AlternateIDAttribute) may not be valid. Current value: $($ADUser.$AlternateIDAttribute)"
+                        }
+                    }
                 }
                 else{
                     if ($ADUser.$BackupAttribute) {
@@ -293,29 +312,10 @@ process{
                         $Details = "$($ADUser.Name) already has value: $($ADUser.$BackupAttribute) for $($BackupAttribute). UPN may have previously been modified. No change applied."
                     }
                     else{
-                        if ($Subdomain) {
-                            Write-Verbose "Subdomain specified. New UPN will be $($Subdomain).$($DomainSuffixExtraction). Checking if new UPN exists in Forest suffixes."
-                                $NewDomainSuffix = "$($Subdomain).$($DomainSuffixExtraction)"
-                                if ($NewDomainSuffix -notin $DomainSuffixes) {
-                                    Write-Error "UPN change skipped for $($ADUser.Name). New domain suffix with subdomain $NewDomainSuffix not in forest UPN suffixes."
-                                    $Status = "Skipped"
-                                    $Details = "UPN change skipped for $($ADUser.Name). New domain suffix with subdomain $NewDomainSuffix not in forest UPN suffixes."
-                                }
-                                else{
-                                    $RegenFullDomain = "$($Subdomain).$($DomainSuffixExtraction)"
-                                    $NewUPN = "$($ADUser.$AlternateIDAttribute.Split("@")[0])@$($RegenFullDomain)"
-                                    try{
-                                        Set-ADUser -Identity $ADUser.SamAccountName -UserPrincipalName $NewUPN -Replace @{$BackupAttribute = $OldUPN}
-                                        Write-Verbose "UPN successfully changed for $($ADUser.Name), updated value: $($NewUPN)"
-                                        $Status = "Success"
-                                        $Details = "UPN successfully updated for $($ADUser.Name), updated value: $($NewUPN)"
-                                    }
-                                    catch{
-                                        Write-Verbose "UPN change failed for $($ADUser.Name)"
-                                        $Status = "Fail"
-                                        $Details = "UPN change failed for $($ADUser.Name) the UPN value stored in $($AlternateIDAttribute) may not be valid. Current value: $($ADUser.$AlternateIDAttribute)"
-                                    }
-                                }
+                        if (($ADUser.$AlternateIDAttribute.Split("@")[1]) -notin $DomainSuffixes) {
+                            Write-Error "UPN change skipped for $($ADUser.Name). Domain suffix $($ADUser.$AlternateIDAttribute.Split("@")[1]) not in forest UPN suffixes."
+                            $Status = "Skipped"
+                            $Details = "UPN change skipped for $($ADUser.Name). Domain suffix $($ADUser.$AlternateIDAttribute.Split("@")[1]) not in forest UPN suffixes."
                         }
                         else{
                             Write-Verbose "Subdomain not specified. New UPN will replicate the $($AlternateIDAttribute) value as defined by parameter."
